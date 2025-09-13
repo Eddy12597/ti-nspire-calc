@@ -139,3 +139,63 @@ cython_debug/
 
 # VS Code settings
 .vscode/
+
+# C++ build artifacts
+*.obj
+*.o
+*.lo
+*.la
+*.al
+*.libs
+*.so
+*.so.*
+*.a
+*.lib
+*.dll
+*.dylib
+*.exe
+*.out
+*.app
+
+# CMake build directories
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+build/
+Debug/
+Release/
+x64/
+*.dir/
+
+# Qt Creator
+*.pro.user
+*.qmake.stash
+*.qmake.cache
+
+# Code::Blocks
+*.depend
+*.layout
+
+# Visual Studio
+*.vcxproj*
+*.sln
+*.sdf
+*.opensdf
+*.vcxproj.filters
+*.vcxproj.user
+*.ncb
+*.suo
+*.user
+*.ipch
+*.pdb
+
+# CLion
+.idea/
+cmake-build-*/
+
+# Other
+*.gch
+*.pch
+*.swp
+*.DS_Store
