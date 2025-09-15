@@ -1,0 +1,39 @@
+#ifndef COLORS_H
+#define COLORS_H
+
+#include <string>
+#include <iostream>
+
+/**
+ * includes RESET, colors, Styles
+ * RESET=UPPERCASE
+ * colors=lowercase
+ * Styles=Capitalized
+ */
+namespace col {
+    const std::string RESET = "\033[0m";
+    const std::string CLEAR = "\033[2J\033[H";
+
+    const std::string black = "\033[30m";
+    const std::string red = "\033[31m";
+    const std::string green = "\033[32m";
+    const std::string yellow = "\033[33m";
+    const std::string blue = "\033[34m";
+    const std::string magenta = "\033[35m";
+    const std::string cyan = "\033[36m";
+    const std::string white = "\033[37m";
+
+    const std::string Bold = "\033[1m";
+    const std::string Underline = "\033[4m";
+    const std::string Reversed = "\033[7m";
+    
+
+    inline std::string color_text(const std::string& text, const std::string& color) {
+        return color + text + RESET;
+    }
+    inline void cprint(const std::string&& text, const std::string& color) {
+        std::cout << color << text << RESET << std::endl;
+    }
+}
+
+#endif // COLORS_H

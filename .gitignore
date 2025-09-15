@@ -199,3 +199,6 @@ cmake-build-*/
 *.pch
 *.swp
 *.DS_Store
+
+build/
+.autocommit
