@@ -21,16 +21,24 @@ std::ostream& operator<<(std::ostream& os, const value& obj) {
     return os << obj.toString();
 }
 
+std::string value::toString() const {
+    return "<value>";
+}
+
+// === void_t implementation ===
+std::string void_t::toString() const {
+    return "Done";
+}
+
 // === integer implementation ===
-// TODO: refactor to bigint (more than long long)
 integer::integer(long long value) : value(value) {}
 
-long long integer::getValue() const {
+BigInt integer::getValue() const {
     return value;
 }
 
 std::string integer::toString() const {
-    return "ti::integer(" + std::to_string(value) + ")";
+    return value.to_string();
 }
 
 // === decimal implementation ===
@@ -43,7 +51,7 @@ double decimal::getValue() const {
 }
 
 std::string decimal::toString() const {
-    return "ti::decimal(" + std::to_string(value) + ")";
+    return std::to_string(value);
 }
 
 // === fraction implementation ===
@@ -62,23 +70,22 @@ integer fraction::getDenominator() const {
 }
 
 double fraction::getValue() const {
-    return static_cast<double>(numerator.getValue()) / denominator.getValue();
+    return static_cast<double>(numerator.getValue().to_long_long()) / denominator.getValue().to_long_long();
 }
 
 decimal fraction::getDecimalValue() const {
     return decimal(getValue());
 }
 
-std::tuple<long long, long long> fraction::toTuple() const {
+std::tuple<BigInt, BigInt> fraction::toTuple() const {
     return std::make_tuple(numerator.getValue(), denominator.getValue());
 }
 
 std::string fraction::toString() const {
-    return "ti::fraction(" + std::to_string(numerator.getValue()) + ", " + 
-           std::to_string(denominator.getValue()) + ")";
+    return "(" + numerator.getValue().to_string() + ") / (" + denominator.getValue().to_string() + ")";
 }
 
-// str implementation
+// === string implementation ===
 string::string(const std::string& s) : value(s) {}
 
 std::string string::getValue() const {
@@ -86,60 +93,7 @@ std::string string::getValue() const {
 }
 
 std::string string::toString() const {
-    return "ti::string(\"" + value + "\")";
-}
-
-// list implementation (for non-template methods)
-template<typename T>
-list<T>::list(const std::vector<T>& values) : values(values) {
-    if constexpr(is_2d_vector_v<T>) {
-        std::cerr << col::red << "[Warning] list<list<list>> not allowed on TI Nspire (throws 'Invalid list or matrix' error)" << col::RESET << std::endl;
-    }
-}
-
-template<typename T>
-list<T>::list(const list<T>& other) : values(other.values) {}
-
-template<typename T>
-T list<T>::operator[](size_t i) const {
-    return values[i];
-}
-
-template<typename T>
-std::vector<T> list<T>::getValues() const {
-    return values;
-}
-
-template<typename T>
-size_t list<T>::size() const {
-    return values.size();
-}
-
-template<typename T>
-std::string list<T>::toString() const {
-    std::stringstream ss;
-    ss << "ti::list({";
-    for (size_t i = 0; i < values.size(); i++) {
-        if constexpr (std::is_same_v<T, std::shared_ptr<value>>) {
-            ss << values[i]->toString();
-        } else if constexpr (is_variant_v<T>) {
-            ss << std::visit([](const auto& arg) -> std::string {
-                if constexpr (std::is_same_v<std::decay_t<decltype(arg)>, std::shared_ptr<value>>) {
-                    return arg->toString();
-                } else {
-                    return arg.toString();
-                }
-            }, values[i]);
-        } else {
-            // Handle regular types
-            ss << values[i].toString();
-        }
-        if (i != values.size() - 1) {
-            ss << ", ";
-        }
-    }
-    ss << "})";
-    return ss.str();
+    return "\"" + value + "\"";
 }
 
 // Explicit template instantiation for common types
@@ -167,5 +121,7 @@ template class list<
         >
     >
 >;
+
+
 
 } // namespace ti

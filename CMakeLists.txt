@@ -10,5 +10,13 @@ add_compile_options(-Wall -Wextra -pedantic)
 add_executable(ti_repl src/main.cpp)
 target_include_directories(ti_repl PUBLIC include)
 
-add_library(ti_repl_lib STATIC src/utils.cpp src/value.cpp src/repl.cpp)
+add_library(ti_repl_lib STATIC 
+                src/ast.cpp
+                src/bigint.cpp
+                src/main.cpp
+                src/repl.cpp
+                src/runtimeenv.cpp
+                src/utils.cpp
+                src/value.cpp
+                )
 target_link_libraries(ti_repl ti_repl_lib)

@@ -1,5 +1,5 @@
-#ifndef VARIABLE_H
-#define VARIABLE_H
+#ifndef VALUE_H
+#define VALUE_H
 
 #include <string>
 #include <iostream>
@@ -10,6 +10,9 @@
 #include <vector>
 #include <sstream>
 #include <memory>
+#include <variant>
+
+#include "bigint.h"
 
 namespace ti {
 
@@ -19,22 +22,36 @@ class decimal;
 
 class value {
 public:
+    value() = default;
     virtual ~value() = default;
     virtual std::string toString() const;
     
     friend std::ostream& operator<<(std::ostream& os, const value& obj);
 };
 
-// TODO: refactor to bigint (more than long long)
+using valptr_t = std::shared_ptr<ti::value>;
+
+class void_t : public value {
+public:
+    void_t() = default;
+    ~void_t() override = default;
+
+    std::string toString() const override;
+};
+
+inline const valptr_t none = std::make_shared<ti::void_t>();
+
+
 class integer : public value {
 private:
-    long long value;
+    BigInt value;
 
 public:
     explicit integer(long long value);
+    explicit integer(BigInt value);
     ~integer() override = default;
 
-    long long getValue() const;
+    BigInt getValue() const;
     std::string toString() const override;
 };
 
@@ -65,7 +82,7 @@ public:
     integer getDenominator() const;
     double getValue() const;
     decimal getDecimalValue() const;
-    std::tuple<long long, long long> toTuple() const;
+    std::tuple<BigInt, BigInt> toTuple() const;
     std::string toString() const override;
 };
 
@@ -88,23 +105,99 @@ struct _is_2d_vector<std::vector<std::vector<InnerT>>> : std::true_type {};
 template<typename T> 
 inline constexpr bool is_2d_vector_v = _is_2d_vector<T>::value;
 
-template<typename T = value> 
-class list : public value {
-private:
+
+// === collection base ===
+template<typename T>
+class collection : public value {
+protected:
     std::vector<T> values;
+
 public:
-    list(const std::vector<T>& values);
-    list(const list<T>& values);
-    
-    T operator[](size_t i) const;
-    std::vector<T> getValues() const;
-    size_t size() const;
-    
-    std::string toString() const override;
+    collection() = default;
+    explicit collection(const std::vector<T>& values) : values(values) {}
+    collection(const collection<T>& other) = default;
+    virtual ~collection() = default;
+
+    T operator[](size_t i) const { return values[i]; }
+    std::vector<T> getValues() const { return values; }
+    size_t size() const { return values.size(); }
+
+    // subclasses must override formatting
+    virtual std::string toString() const override = 0;
 };
 
+
+// Type trait to detect if a type is a std::variant 
+template<typename T> struct is_variant : std::false_type {}; 
+template<typename... Ts> struct is_variant<std::variant<Ts...>> : std::true_type {}; template<typename T> inline constexpr bool is_variant_v = is_variant<T>::value;
+
+// === list ===
+template<typename T>
+class list : public collection<T> {
+public:
+    using collection<T>::collection; // inherit constructors
+    list(const list<T>& other) = default;
+
+    std::string toString() const override {
+        std::stringstream ss;
+        ss << "{";
+        for (size_t i = 0; i < this->values.size(); i++) {
+            const auto& v = this->values[i];
+            if constexpr (std::is_same_v<T, std::shared_ptr<value>>) {
+                ss << v->toString();
+            } else if constexpr (is_variant_v<T>) {
+                ss << std::visit([](const auto& arg) -> std::string {
+                    if constexpr (std::is_same_v<std::decay_t<decltype(arg)>, std::shared_ptr<value>>) {
+                        return arg->toString();
+                    } else {
+                        return arg.toString();
+                    }
+                }, v);
+            } else {
+                ss << v.toString();
+            }
+            if (i != this->values.size() - 1) ss << ", ";
+        }
+        ss << "}";
+        return ss.str();
+    }
+};
+
+// === vector ===
+template<typename T>
+class vector : public collection<T> {
+public:
+    using collection<T>::collection;
+    vector(const vector<T>& other) = default;
+    vector(const list<T>& l) : collection<T>(l.getValues()) {}
+
+    std::string toString() const override {
+        std::stringstream ss;
+        ss << "[";
+        for (size_t i = 0; i < this->values.size(); i++) {
+            const auto& v = this->values[i];
+            if constexpr (std::is_same_v<T, std::shared_ptr<value>>) {
+                ss << v->toString();
+            } else if constexpr (is_variant_v<T>) {
+                ss << std::visit([](const auto& arg) -> std::string {
+                    if constexpr (std::is_same_v<std::decay_t<decltype(arg)>, std::shared_ptr<value>>) {
+                        return arg->toString();
+                    } else {
+                        return arg.toString();
+                    }
+                }, v);
+            } else {
+                ss << v.toString();
+            }
+            if (i != this->values.size() - 1) ss << " ";
+        }
+        ss << "]";
+        return ss.str();
+    }
+};
+
+
 using matrix = list<list<std::shared_ptr<value>>>;
-using vptr = std::shared_ptr<ti::value>;
 
 #if 0
 class function {
@@ -118,4 +211,4 @@ public:
 #endif
 } // namespace ti
 
-#endif // VARIABLE_H
+#endif // VALUE_H
